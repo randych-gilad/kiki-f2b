@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -12,10 +11,18 @@ import (
 func main() {
 	Fail2banExists()
 	// getAllTables()
-	a := &Fail2banStatusClient{}
-	a.getError()
-	slog.Info(fmt.Sprintf("%s{%q:%q,%q:%q}\n", "Fail2banStatusClient", "StatusMessage", a.StatusMessage, "ErrorMessage", a.ErrorMessage))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
+	slog.SetDefault(logger)
+	a := NewFail2banStatusClient()
+	logger.Info("Fail2banStatusClient",
+		slog.String("StatusMessage", a.StatusMessage),
+		slog.String("ErrorMessage", a.ErrorMessage.Error()))
+	// slog.Info(fmt.Sprintf("%s{%q:%q,%q:%q}\n", "Fail2banStatusClient", "StatusMessage", a.StatusMessage, "ErrorMessage", a.ErrorMessage))
 	Fail2banStart()
+	b := NewFail2banStatusClient()
+	logger.Info("Fail2banStatusClient",
+		slog.String("StatusMessage", b.StatusMessage),
+		slog.String("ErrorMessage", b.ErrorMessage.Error()))
 	showJails()
 	showBans()
 }
@@ -40,7 +47,7 @@ type Fail2banStatusClient struct {
 	ErrorMessage  error
 }
 
-func (sc *Fail2banStatusClient) getError() {
+func NewFail2banStatusClient() *Fail2banStatusClient {
 	message := func() string {
 		cmd := exec.Command("fail2ban-client", "status")
 		stdout, _ := cmd.CombinedOutput()
@@ -60,11 +67,16 @@ func (sc *Fail2banStatusClient) getError() {
 		return message
 	}()
 	if strings.Contains(messageFinal, "Failed") {
-		sc.StatusMessage = ""
-		sc.ErrorMessage = errors.New(messageFinal)
+		return &Fail2banStatusClient{
+			StatusMessage: "",
+			ErrorMessage:  errors.New(messageFinal),
+		}
 	} else {
-		sc.StatusMessage = messageFinal
-		sc.ErrorMessage = errors.New("")
+		return &Fail2banStatusClient{
+
+			StatusMessage: messageFinal,
+			ErrorMessage:  errors.New(""),
+		}
 	}
 }
 

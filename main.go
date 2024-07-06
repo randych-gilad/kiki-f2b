@@ -13,14 +13,14 @@ func main() {
 	// getAllTables()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
 	slog.SetDefault(logger)
-	a := NewFail2banStatusClient()
+	a := NewFail2banStatus()
 	Fail2banStart()
 	if a.ErrorMessage.Error() != "" {
-		logger.Error("Fail2banStatusClient",
+		logger.Error("Fail2banStatus",
 			slog.String("StatusMessage", a.StatusMessage),
 			slog.String("ErrorMessage", a.ErrorMessage.Error()))
 	} else {
-		logger.Info("Fail2banStatusClient",
+		logger.Info("Fail2banStatus",
 			slog.String("StatusMessage", a.StatusMessage),
 			slog.String("ErrorMessage", a.ErrorMessage.Error()))
 	}
@@ -44,18 +44,15 @@ func Fail2banStart() {
 	slog.Info("Starting fail2ban")
 }
 
-type Fail2banStatusClient struct {
+type Fail2banStatus struct {
 	StatusMessage string
 	ErrorMessage  error
 }
 
-func NewFail2banStatusClient() *Fail2banStatusClient {
+func NewFail2banStatus() *Fail2banStatus {
 	message := func() string {
 		cmd := exec.Command("fail2ban-client", "status")
 		stdout, _ := cmd.CombinedOutput()
-		// if err != nil {
-		// 	slog.Error(err.Error())
-		// }
 		return string(stdout)
 	}()
 	messageFinal := func() string {
@@ -69,13 +66,12 @@ func NewFail2banStatusClient() *Fail2banStatusClient {
 		return message
 	}()
 	if strings.Contains(messageFinal, "Failed") {
-		return &Fail2banStatusClient{
+		return &Fail2banStatus{
 			StatusMessage: "",
 			ErrorMessage:  errors.New(messageFinal),
 		}
 	} else {
-		return &Fail2banStatusClient{
-
+		return &Fail2banStatus{
 			StatusMessage: messageFinal,
 			ErrorMessage:  errors.New(""),
 		}

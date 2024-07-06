@@ -170,8 +170,6 @@ func showBans() {
 			slog.Int("BanTime", ban.BanTime),
 			slog.Int("BanCount", ban.BanCount),
 			slog.Group("Data", slog.Any("Matches", ban.Data.Matches), slog.Int("Failures", ban.Data.Failures)),
-			"Matches", ban.Data.Matches,
-			"Failures", ban.Data.Failures,
 		)
 	}
 }

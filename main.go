@@ -14,15 +14,16 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
 	slog.SetDefault(logger)
 	a := NewFail2banStatusClient()
-	logger.Info("Fail2banStatusClient",
-		slog.String("StatusMessage", a.StatusMessage),
-		slog.String("ErrorMessage", a.ErrorMessage.Error()))
-	// slog.Info(fmt.Sprintf("%s{%q:%q,%q:%q}\n", "Fail2banStatusClient", "StatusMessage", a.StatusMessage, "ErrorMessage", a.ErrorMessage))
 	Fail2banStart()
-	b := NewFail2banStatusClient()
-	logger.Info("Fail2banStatusClient",
-		slog.String("StatusMessage", b.StatusMessage),
-		slog.String("ErrorMessage", b.ErrorMessage.Error()))
+	if a.ErrorMessage.Error() != "" {
+		logger.Error("Fail2banStatusClient",
+			slog.String("StatusMessage", a.StatusMessage),
+			slog.String("ErrorMessage", a.ErrorMessage.Error()))
+	} else {
+		logger.Info("Fail2banStatusClient",
+			slog.String("StatusMessage", a.StatusMessage),
+			slog.String("ErrorMessage", a.ErrorMessage.Error()))
+	}
 	showJails()
 	showBans()
 }
@@ -38,7 +39,8 @@ func Fail2banExists() {
 }
 
 func Fail2banStart() {
-	_ = exec.Command("service", "fail2ban", "start")
+	cmd := exec.Command("service", "fail2ban", "start")
+	cmd.Run()
 	slog.Info("Starting fail2ban")
 }
 

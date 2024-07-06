@@ -138,7 +138,7 @@ func showBans() {
 		slog.Error(err.Error())
 	}
 	for _, ban := range b {
-		slog.Info(fmt.Sprintf("%s{%q: %q, %q: %q, %q: %d, %q: %d, %q: %d, %s{%q: %q, %q: %d}}\n",
+		slog.Info(fmt.Sprintf("%s{%q:%q,%q:%q,%q:%d,%q:%d,%q:%d,%s{%q:%q,%q:%d}}\n",
 			"Ban", "Jail", ban.Jail, "IP", ban.IP, "TimeOfBan", ban.TimeOfBan, "BanTime", ban.BanTime, "BanCount", ban.BanCount, "Data", "Matches", ban.Data.Matches, "Failures", ban.Data.Failures))
 	}
 }

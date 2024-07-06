@@ -15,7 +15,7 @@ func main() {
 
 	a := &Fail2banStatusClient{}
 	a.getError()
-	slog.Info(fmt.Sprintf("%s{%q: %q, %q: %q}\n", "Fail2banStatusClient", "StatusMessage", a.StatusMessage, "ErrorMessage", a.ErrorMessage))
+	slog.Info(fmt.Sprintf("%s{%q:%q,%q:%q}\n", "Fail2banStatusClient", "StatusMessage", a.StatusMessage, "ErrorMessage", a.ErrorMessage))
 	Fail2banStart()
 	showJails()
 	showBans()
@@ -59,21 +59,17 @@ func (sc *Fail2banStatusClient) getError() {
 		return message
 	}()
 	if strings.Contains(messageFinal, "Failed") {
+		sc.StatusMessage = ""
 		sc.ErrorMessage = errors.New(messageFinal)
 	} else {
 		sc.StatusMessage = messageFinal
+		sc.ErrorMessage = errors.New("")
 	}
 }
 
 // todos
-// fetch fail2ban-client status as struct
 // fetch fail2ban-server status as struct
-// try to write parser for at least sshd jail
 // find any log file and try to cast it to struct
-
-// cat /var/log/fail2ban.log
-// INFO    Connected to fail2ban persistent database '/var/lib/fail2ban/fail2ban.sqlite3'
-// install sqlite package
 
 // FIX BELOW
 

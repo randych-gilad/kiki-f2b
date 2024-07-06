@@ -12,7 +12,6 @@ import (
 func main() {
 	Fail2banExists()
 	// getAllTables()
-
 	a := &Fail2banStatusClient{}
 	a.getError()
 	slog.Info(fmt.Sprintf("%s{%q:%q,%q:%q}\n", "Fail2banStatusClient", "StatusMessage", a.StatusMessage, "ErrorMessage", a.ErrorMessage))
@@ -22,10 +21,12 @@ func main() {
 }
 
 func Fail2banExists() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
+	slog.SetDefault(logger)
 	if _, err := os.Stat("/usr/bin/fail2ban-client"); errors.Is(err, os.ErrNotExist) {
-		slog.Warn(err.Error())
+		logger.Error(err.Error())
 	} else {
-		slog.Info("fail2ban-client is present on this machine")
+		logger.Info("fail2ban-client is present on this machine")
 	}
 }
 

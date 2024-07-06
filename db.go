@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -64,6 +65,21 @@ func getAllTables() {
 	}
 }
 
+func attrSettings(_ []string, a slog.Attr) slog.Attr {
+	// This is *temporary*
+	if a.Key == "source" {
+		// src := a.Value.Any().(*slog.Source)
+		// return slog.Group("source", slog.String("function", src.Function), slog.Int("line", src.Line))
+		return slog.Attr{}
+	}
+	// There should be timestamp, but it takes too much space
+	// for now
+	if a.Key == "time" {
+		return slog.Attr{}
+	}
+	return a
+}
+
 func getJails(db *sql.DB) ([]Jail, error) {
 	rows, err := db.Query("SELECT name, enabled FROM jails")
 	if err != nil {
@@ -93,16 +109,18 @@ func showJails() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	j, err := getJails(db)
+	jails, err := getJails(db)
 	if err != nil {
 		slog.Error(err.Error())
 	}
-	for _, jail := range j {
-		slog.Info(fmt.Sprintf("%s{%q: %q, %q: %d}\n",
-			"Jail",
-			"Name", jail.Name,
-			"Enabled", jail.Enabled,
-		))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
+	slog.SetDefault(logger)
+
+	for _, j := range jails {
+		logger.Info("Jail",
+			slog.String("Name", j.Name),
+			slog.Int("Enabled", j.Enabled),
+		)
 	}
 }
 
@@ -141,17 +159,19 @@ func showBans() {
 	if err != nil {
 		slog.Error(err.Error())
 	}
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
+	slog.SetDefault(logger)
 	for _, ban := range b {
-		slog.Info(fmt.Sprintf("%s{%q:%q,%q:%q,%q:%d,%q:%d,%q:%d,%s{%q:%q,%q:%d}}\n",
-			"Ban",
-			"Jail", ban.Jail,
-			"IP", ban.IP,
-			"TimeOfBan", ban.TimeOfBan,
-			"BanTime", ban.BanTime,
-			"BanCount", ban.BanCount,
-			"Data",
+		logger.Info("Ban",
+			slog.String("Jail", ban.Jail),
+			slog.String("IP", ban.IP),
+			slog.Int("TimeOfBan", ban.TimeOfBan),
+			slog.Int("BanTime", ban.BanTime),
+			slog.Int("BanCount", ban.BanCount),
+			slog.Group("Data", slog.Any("Matches", ban.Data.Matches), slog.Int("Failures", ban.Data.Failures)),
 			"Matches", ban.Data.Matches,
 			"Failures", ban.Data.Failures,
-		))
+		)
 	}
 }

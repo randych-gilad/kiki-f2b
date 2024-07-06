@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
@@ -98,5 +99,46 @@ func showJails() {
 	}
 	for _, jail := range j {
 		slog.Info(fmt.Sprintf("%s{%q: %q, %q: %d}\n", "Jail", "Name", jail.Name, "Enabled", jail.Enabled))
+	}
+}
+
+func getBans(db *sql.DB) ([]Ban, error) {
+	rows, err := db.Query("SELECT jail, ip, timeofban, bantime, bancount, data FROM bans")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var bans []Ban
+	for rows.Next() {
+		var ban Ban
+		var rawData []byte
+		if err := rows.Scan(&ban.Jail, &ban.IP, &ban.TimeOfBan, &ban.BanTime, &ban.BanCount, &rawData); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(rawData, &ban.Data); err != nil {
+			return nil, err
+		}
+		bans = append(bans, ban)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return bans, nil
+}
+
+func showBans() {
+	db, err := sql.Open("sqlite3", file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	b, err := getBans(db)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+	for _, ban := range b {
+		slog.Info(fmt.Sprintf("%s{%q: %q, %q: %q, %q: %d, %q: %d, %q: %d, %s{%q: %q, %q: %d}}\n",
+			"Ban", "Jail", ban.Jail, "IP", ban.IP, "TimeOfBan", ban.TimeOfBan, "BanTime", ban.BanTime, "BanCount", ban.BanCount, "Data", "Matches", ban.Data.Matches, "Failures", ban.Data.Failures))
 	}
 }

@@ -18,6 +18,7 @@ func main() {
 	slog.Info(fmt.Sprintf("%s{%q: %q, %q: %q}\n", "Fail2banStatusClient", "StatusMessage", a.StatusMessage, "ErrorMessage", a.ErrorMessage))
 	Fail2banStart()
 	showJails()
+	showBans()
 }
 
 func Fail2banExists() {

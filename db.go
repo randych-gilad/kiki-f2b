@@ -173,3 +173,53 @@ func showBans() {
 		)
 	}
 }
+
+func getBips(db *sql.DB) ([]Bip, error) {
+	rows, err := db.Query("SELECT ip, jail, timeofban, bantime, bancount, data FROM bips")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var bips []Bip
+	for rows.Next() {
+		var bip Bip
+		var rawData []byte
+		if err := rows.Scan(&bip.IP, &bip.Jail, &bip.TimeOfBan, &bip.BanTime, &bip.BanCount, &rawData); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(rawData, &bip.Data); err != nil {
+			return nil, err
+		}
+		bips = append(bips, bip)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return bips, nil
+}
+
+func showBips() {
+	db, err := sql.Open("sqlite3", file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	b, err := getBips(db)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
+	slog.SetDefault(logger)
+	for _, bip := range b {
+		logger.Info("Bip",
+			slog.String("IP", bip.IP),
+			slog.String("Jail", bip.Jail),
+			slog.Int("TimeOfBan", bip.TimeOfBan),
+			slog.Int("BanTime", bip.BanTime),
+			slog.Int("BanCount", bip.BanCount),
+			slog.Group("Data", slog.Any("Matches", bip.Data.Matches), slog.Int("Failures", bip.Data.Failures)),
+		)
+	}
+}

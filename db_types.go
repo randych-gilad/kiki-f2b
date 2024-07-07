@@ -24,16 +24,17 @@ type Ban struct {
 	BanCount  int     `json:"bancount"`
 	Data      BanData `json:"data"`
 }
+
+type Bip struct {
+	IP        string  `json:"ip"`
+	Jail      string  `json:"jail"`
+	TimeOfBan int     `json:"timeofban"`
+	BanTime   int     `json:"bantime"`
+	BanCount  int     `json:"bancount"`
+	Data      BanData `json:"data"`
+}
+
 type BanData struct {
 	Matches  []string `json:"matches"`
 	Failures int      `json:"failures"`
-}
-
-type Bip struct {
-	IP        string `json:"ip"`
-	Jail      string `json:"jail"`
-	TimeOfBan int    `json:"timeofban"`
-	BanTime   int    `json:"bantime"`
-	BanCount  int    `json:"bancount"`
-	Data      string `json:"data"`
 }

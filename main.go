@@ -26,6 +26,7 @@ func main() {
 	}
 	showJails()
 	showBans()
+	showBips()
 }
 
 func Fail2banExists() {

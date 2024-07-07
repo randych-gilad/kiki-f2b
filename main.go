@@ -15,12 +15,12 @@ func main() {
 	slog.SetDefault(logger)
 	a := NewFail2banStatus()
 	Fail2banStart()
-	if a.ErrorMessage.Error() == "" {
-		logger.Info("Fail2banStatus",
+	if a.ErrorMessage.Error() != "" {
+		logger.Error("Fail2banStatus",
 			slog.String("StatusMessage", a.StatusMessage),
 			slog.String("ErrorMessage", a.ErrorMessage.Error()))
 	} else {
-		logger.Error("Fail2banStatus",
+		logger.Info("Fail2banStatus",
 			slog.String("StatusMessage", a.StatusMessage),
 			slog.String("ErrorMessage", a.ErrorMessage.Error()))
 	}

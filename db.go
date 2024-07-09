@@ -7,21 +7,28 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 const file string = "/var/lib/fail2ban/fail2ban.sqlite3"
 
-func getAllTables() {
+func newConn(file string) (*dbConn, error) {
 	db, err := sql.Open("sqlite3", file)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	defer db.Close()
+	return &dbConn{
+		mutex: sync.RWMutex{},
+		conn:  db,
+	}, nil
+}
 
-	// Get the list of tables
-	rows, err := db.Query("SELECT name FROM sqlite_master WHERE type='table';")
+func getAllTables(db *dbConn) {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+	rows, err := db.conn.Query("SELECT name FROM sqlite_master WHERE type='table';")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,9 +48,9 @@ func getAllTables() {
 	}
 
 	for _, table := range tables {
-		fmt.Printf("Table: %s\n", table)
+		// fmt.Printf("Table: %s\n", table)
 
-		colRows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s);", table))
+		colRows, err := db.conn.Query(fmt.Sprintf("PRAGMA table_info(%s);", table))
 		if err != nil {
 			panic(err)
 		}
@@ -56,7 +63,7 @@ func getAllTables() {
 			if err := colRows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
 				panic(err)
 			}
-			fmt.Printf("  Column: %s, Type: %s\n", name, ctype)
+			// fmt.Printf("  Column: %s, Type: %s\n", name, ctype)
 		}
 
 		if err := colRows.Err(); err != nil {
@@ -80,8 +87,10 @@ func attrSettings(_ []string, a slog.Attr) slog.Attr {
 	return a
 }
 
-func getJails(db *sql.DB) ([]Jail, error) {
-	rows, err := db.Query("SELECT name, enabled FROM jails")
+func getJails(db *dbConn) ([]Jail, error) {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+	rows, err := db.conn.Query("SELECT name, enabled FROM jails")
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +112,7 @@ func getJails(db *sql.DB) ([]Jail, error) {
 	return jails, nil
 }
 
-func showJails() {
-	db, err := sql.Open("sqlite3", file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+func showJails(db *dbConn) {
 	jails, err := getJails(db)
 	if err != nil {
 		slog.Error(err.Error())
@@ -124,8 +128,10 @@ func showJails() {
 	}
 }
 
-func getBans(db *sql.DB) ([]Ban, error) {
-	rows, err := db.Query("SELECT jail, ip, timeofban, bantime, bancount, data FROM bans")
+func getBans(db *dbConn) ([]Ban, error) {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+	rows, err := db.conn.Query("SELECT jail, ip, timeofban, bantime, bancount, data FROM bans")
 	if err != nil {
 		return nil, err
 	}
@@ -149,12 +155,7 @@ func getBans(db *sql.DB) ([]Ban, error) {
 	return bans, nil
 }
 
-func showBans() {
-	db, err := sql.Open("sqlite3", file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+func showBans(db *dbConn) {
 	b, err := getBans(db)
 	if err != nil {
 		slog.Error(err.Error())
@@ -174,8 +175,10 @@ func showBans() {
 	}
 }
 
-func getBips(db *sql.DB) ([]Bip, error) {
-	rows, err := db.Query("SELECT ip, jail, timeofban, bantime, bancount, data FROM bips")
+func getBips(db *dbConn) ([]Bip, error) {
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+	rows, err := db.conn.Query("SELECT ip, jail, timeofban, bantime, bancount, data FROM bips")
 	if err != nil {
 		return nil, err
 	}
@@ -199,27 +202,22 @@ func getBips(db *sql.DB) ([]Bip, error) {
 	return bips, nil
 }
 
-func showBips() {
-	db, err := sql.Open("sqlite3", file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	b, err := getBips(db)
+func showBips(db *dbConn) {
+	_, err := getBips(db)
 	if err != nil {
 		slog.Error(err.Error())
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
-	slog.SetDefault(logger)
-	for _, bip := range b {
-		logger.Info("Bip",
-			slog.String("IP", bip.IP),
-			slog.String("Jail", bip.Jail),
-			slog.Int("TimeOfBan", bip.TimeOfBan),
-			slog.Int("BanTime", bip.BanTime),
-			slog.Int("BanCount", bip.BanCount),
-			slog.Group("Data", slog.Any("Matches", bip.Data.Matches), slog.Int("Failures", bip.Data.Failures)),
-		)
-	}
+	// logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
+	// slog.SetDefault(logger)
+	// for _, bip := range b {
+	// 	logger.Info("Bip",
+	// 		slog.String("IP", bip.IP),
+	// 		slog.String("Jail", bip.Jail),
+	// 		slog.Int("TimeOfBan", bip.TimeOfBan),
+	// 		slog.Int("BanTime", bip.BanTime),
+	// 		slog.Int("BanCount", bip.BanCount),
+	// 		slog.Group("Data", slog.Any("Matches", bip.Data.Matches), slog.Int("Failures", bip.Data.Failures)),
+	// 	)
+	// }
 }

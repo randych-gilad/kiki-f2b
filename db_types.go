@@ -1,5 +1,15 @@
 package main
 
+import (
+	"database/sql"
+	"sync"
+)
+
+type dbConn struct {
+	mutex sync.RWMutex
+	conn  *sql.DB
+}
+
 type Fail2banDb struct {
 	Version int `json:"version"`
 }

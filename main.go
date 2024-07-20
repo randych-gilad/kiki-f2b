@@ -9,11 +9,12 @@ import (
 )
 
 func main() {
-	Fail2banExists()
+	a := &Fail2banInstance{}
+	a.IsExist()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
 	slog.SetDefault(logger)
-	a := NewFail2banStatus()
-	Fail2banStart()
+	a.Start()
+	a.Status()
 	if a.ErrorMessage.Error() != "" {
 		logger.Error("Fail2banStatus",
 			slog.String("StatusMessage", a.StatusMessage),
@@ -34,7 +35,12 @@ func main() {
 	showBips(db)
 }
 
-func Fail2banExists() {
+type Fail2banInstance struct {
+	StatusMessage string
+	ErrorMessage  error
+}
+
+func (i *Fail2banInstance) IsExist() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
 	slog.SetDefault(logger)
 	if _, err := os.Stat("/usr/bin/fail2ban-client"); errors.Is(err, os.ErrNotExist) {
@@ -44,18 +50,13 @@ func Fail2banExists() {
 	}
 }
 
-func Fail2banStart() {
+func (i *Fail2banInstance) Start() {
 	cmd := exec.Command("service", "fail2ban", "start")
 	cmd.Run()
 	slog.Info("Starting fail2ban")
 }
 
-type Fail2banStatus struct {
-	StatusMessage string
-	ErrorMessage  error
-}
-
-func NewFail2banStatus() *Fail2banStatus {
+func (i *Fail2banInstance) Status() {
 	message := func() string {
 		cmd := exec.Command("fail2ban-client", "status")
 		stdout, _ := cmd.CombinedOutput()
@@ -72,14 +73,10 @@ func NewFail2banStatus() *Fail2banStatus {
 		return message
 	}()
 	if strings.Contains(messageFinal, "Failed") {
-		return &Fail2banStatus{
-			StatusMessage: "",
-			ErrorMessage:  errors.New(messageFinal),
-		}
+		i.StatusMessage = ""
+		i.ErrorMessage = errors.New(messageFinal)
 	} else {
-		return &Fail2banStatus{
-			StatusMessage: messageFinal,
-			ErrorMessage:  errors.New(""),
-		}
+		i.StatusMessage = messageFinal
+		i.ErrorMessage = errors.New("")
 	}
 }

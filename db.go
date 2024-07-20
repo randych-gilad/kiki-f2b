@@ -25,7 +25,7 @@ func newConn(file string) (*dbConn, error) {
 	}, nil
 }
 
-func getAllTables(db *dbConn) {
+func (db *dbConn) getAllTables() {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 	rows, err := db.conn.Query("SELECT name FROM sqlite_master WHERE type='table';")
@@ -87,7 +87,7 @@ func attrSettings(_ []string, a slog.Attr) slog.Attr {
 	return a
 }
 
-func getJails(db *dbConn) ([]Jail, error) {
+func (db *dbConn) getJails() ([]Jail, error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 	rows, err := db.conn.Query("SELECT name, enabled FROM jails")
@@ -112,8 +112,8 @@ func getJails(db *dbConn) ([]Jail, error) {
 	return jails, nil
 }
 
-func showJails(db *dbConn) {
-	jails, err := getJails(db)
+func (db *dbConn) showJails() {
+	jails, err := db.getJails()
 	if err != nil {
 		slog.Error(err.Error())
 	}
@@ -128,7 +128,7 @@ func showJails(db *dbConn) {
 	}
 }
 
-func getBans(db *dbConn) ([]Ban, error) {
+func (db *dbConn) getBans() ([]Ban, error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 	rows, err := db.conn.Query("SELECT jail, ip, timeofban, bantime, bancount, data FROM bans")
@@ -155,8 +155,8 @@ func getBans(db *dbConn) ([]Ban, error) {
 	return bans, nil
 }
 
-func showBans(db *dbConn) {
-	b, err := getBans(db)
+func (db *dbConn) showBans() {
+	b, err := db.getBans()
 	if err != nil {
 		slog.Error(err.Error())
 	}
@@ -175,7 +175,7 @@ func showBans(db *dbConn) {
 	}
 }
 
-func getBips(db *dbConn) ([]Bip, error) {
+func (db *dbConn) getBips() ([]Bip, error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 	rows, err := db.conn.Query("SELECT ip, jail, timeofban, bantime, bancount, data FROM bips")
@@ -202,8 +202,8 @@ func getBips(db *dbConn) ([]Bip, error) {
 	return bips, nil
 }
 
-func showBips(db *dbConn) {
-	_, err := getBips(db)
+func (db *dbConn) showBips() {
+	_, err := db.getBips()
 	if err != nil {
 		slog.Error(err.Error())
 	}

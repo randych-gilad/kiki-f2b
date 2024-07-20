@@ -29,10 +29,10 @@ func main() {
 		slog.Error("DB connection error",
 			slog.String("Error", err.Error()))
 	}
-	getAllTables(db)
-	showJails(db)
-	showBans(db)
-	showBips(db)
+	db.getAllTables()
+	db.showJails()
+	db.showBans()
+	db.showBips()
 }
 
 type Fail2banInstance struct {

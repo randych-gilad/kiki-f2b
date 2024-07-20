@@ -9,20 +9,20 @@ import (
 )
 
 func main() {
-	a := &Fail2banInstance{}
-	a.IsExist()
+	inst := &Fail2banInstance{}
+	inst.IsExist()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, ReplaceAttr: attrSettings}))
 	slog.SetDefault(logger)
-	a.Start()
-	a.Status()
-	if a.ErrorMessage.Error() != "" {
+	inst.Start()
+	inst.Status()
+	if inst.ErrorMessage.Error() != "" {
 		logger.Error("Fail2banStatus",
-			slog.String("StatusMessage", a.StatusMessage),
-			slog.String("ErrorMessage", a.ErrorMessage.Error()))
+			slog.String("StatusMessage", inst.StatusMessage),
+			slog.String("ErrorMessage", inst.ErrorMessage.Error()))
 	} else {
 		logger.Info("Fail2banStatus",
-			slog.String("StatusMessage", a.StatusMessage),
-			slog.String("ErrorMessage", a.ErrorMessage.Error()))
+			slog.String("StatusMessage", inst.StatusMessage),
+			slog.String("ErrorMessage", inst.ErrorMessage.Error()))
 	}
 	db, err := newConn(file)
 	if err != nil {
